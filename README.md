@@ -1,8 +1,9 @@
 #PCAP Assembler with CPP
 
 ##서문 
-사실 Python이나 C#쓰면 겁나쉬운건데 살면서 처음다뤄보는 CPP로 해보는 첫 프로젝트입니다
+사실 Python이나 C#쓰면 겁나쉬운건데 살면서 처음다뤄보는 CPP ~~라고쓰고 C~~로 해보는 첫 프로젝트입니다
 
+~~정말 쓸모없는 여담이지만 여자친구 노래 완전좋아요 ㄹㅇ 이작업하면서 입덕했어요~~
 
 ##사용 라이브러리
 라이브러리같은거 키우는 취미없어요. 오직 **노가다** 뿐이죠.
@@ -17,65 +18,141 @@
 **빡** 누르면  에러가 ***뿜뿜*** 할거에요.그러니까 `./Fpcap Desktop/doghunnyjam.pcap` 요로코롬 하세요 
 **참 쉽죠?**
 
-
 ##딱히 너보라고 쓰는 정리는 아니라구! 흥!
-```
+##PCAP Header (With Magic~~,그리고..파이어볼!~~)
+                              pcap fileheader
 
-// #define MAGIC   0xa1b2c3d4 
+    __________________________________________________________________________
 
-// Ethernet addresses are 6 bytes
-#define ETHER_ADDR_LEN	6
+    |       4             |    2      |      2    |           4               |
 
-	/* Ethernet header */
-	struct sniff_ethernet {
-		u_char ether_dhost[ETHER_ADDR_LEN]; // Destination host address
-		u_char ether_shost[ETHER_ADDR_LEN]; // Source host address
-		u_short ether_type; /* IP? ARP? RARP? etc */
-	};
+    __________________________________________________________________________
 
-	/* IP header */
-	struct sniff_ip {
-		u_char ip_vhl;		// version << 4 | header length >> 2 
-		u_char ip_tos;		// type of service 
-		u_short ip_len;		// total length 
-		u_short ip_id;		// identification 
-		u_short ip_off;		// fragment offset field 
-	#define IP_RF 0x8000		// reserved fragment flag 
-	#define IP_DF 0x4000		// dont fragment flag 
-	#define IP_MF 0x2000		// more fragments flag 
-	#define IP_OFFMASK 0x1fff	// mask for fragmenting bits 
-		u_char ip_ttl;		// time to live 
-		u_char ip_p;		// protocol 
-		u_short ip_sum;		// checksum 
-		struct in_addr ip_src,ip_dst; // source and dest address 
-	};
-	#define IP_HL(ip)		(((ip)->ip_vhl) & 0x0f)
-	#define IP_V(ip)		(((ip)->ip_vhl) >> 4)
+    |  magic(0xa1b2c3d4)  | maj.ver   |  min.ver  |  gmt to localcorrection  |
 
-	/* TCP header */
-	typedef u_int tcp_seq;
+    __________________________________________________________________________
 
-	struct sniff_tcp {
-		u_short th_sport;	/* source port */
-		u_short th_dport;	/* destination port */
-		tcp_seq th_seq;		/* sequence number */
-		tcp_seq th_ack;		/* acknowledgement number */
-		u_char th_offx2;	/* data offset, rsvd */
-	#define TH_OFF(th)	(((th)->th_offx2 & 0xf0) >> 4)
-		u_char th_flags;
-	#define TH_FIN 0x01
-	#define TH_SYN 0x02
-	#define TH_RST 0x04
-	#define TH_PUSH 0x08
-	#define TH_ACK 0x10
-	#define TH_URG 0x20
-	#define TH_ECE 0x40
-	#define TH_CWR 0x80
-	#define TH_FLAGS (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
-		u_short th_win;		/* window */
-		u_short th_sum;		/* checksum */
-		u_short th_urp;		/* urgent pointer */
-};
-```
+    |       4             |           4           |           4              |
+
+     _________________________________________________________________________
+
+    |    캡쳐한 시각         |     snap의 최대 길이     |     datalink type        |
+
+    _________________________________________________________________________
+
+ 
+
+
+##PCAP Basic Type
+                                     pcapheader
+
+    _______________________________________________________________________________
+
+    |                  8                  |        4       |         4        |
+
+     ______________________________________________________________________________
+
+    | seconds(4)       | micro seconds(4) |    캡쳐한 길이    |       패킷 길이    |
+
+    _______________________________________________________________________________
+
+
+## Ethernet
+                              ethernet protocol stack
+
+     ____________________________________________________________________________
+
+    |                   6            |                 6            |       2      |
+
+    ____________________________________________________________________________
+
+    |         dest mac address       |       src mac address        |     type     |
+
+    ____________________________________________________________________________
+
+ 
+
+## IPV4 Stack
+                               IPv4 protocol stack
+
+     _____________________________________________________________________________________
+
+    |     4     |     4      |        8           |             16                       |
+
+     _____________________________________________________________________________________
+
+    |   version |   HLEN     |   service type     |        total length                  |
+
+     _____________________________________________________________________________________
+
+    |                       16                    |     3  |                13           |
+
+     _____________________________________________________________________________________
+
+    |                identification               |  Flags |      Fragment offset        |
+
+     _____________________________________________________________________________________
+
+    |          8             |           8        |            16                        |
+
+     _____________________________________________________________________________________
+
+    |    Time To Live        |      Protocol      |        Header Checksum               |
+
+     ____________________________________________________________________________________
+
+    |                                        32                                          |
+
+     ____________________________________________________________________________________
+
+    |                                  Source IPv4 Address                               |
+
+     ____________________________________________________________________________________
+
+    |                                        32                                          |
+
+     ____________________________________________________________________________________
+
+    |                               Destination IPv4 Address                             |
+
+     ____________________________________________________________________________________
+
+    |                                  0~320(40 바이트)                                  |
+
+     ____________________________________________________________________________________
+
+    |                                 Options and Padding                                |
+
+     ____________________________________________________________________________________
+
+##ARP
+                                      ARP
+
+    ____________________________________________________________________________
+
+    |    Hardware Type (16)             |        Protocol Type (16)             |
+
+     ____________________________________________________________________________
+
+    |    H/W length(8)  | Pro length(8) |           OP code (16)                |
+
+     ____________________________________________________________________________
+
+    |         Sender H/W Address (가변 , Ethernet 48bits, 6Bytes)               |
+
+     ____________________________________________________________________________
+
+    |          Sender Protocol Address (가변 , IP 32bits, 4Bytes)               |
+
+     ____________________________________________________________________________
+
+    |          Target H/W Address (가변 , Ethernet 48bits, 6Bytes)              |
+
+     ____________________________________________________________________________
+
+    |            Target Protocol Address (가변 , IP 32bits, 4Bytes)             |
+
+     ____________________________________________________________________________
+
 ##참고문헌
 https://www.tcpdump.org/pcap.html
